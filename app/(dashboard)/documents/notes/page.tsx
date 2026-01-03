@@ -1,16 +1,50 @@
+"use client";
+
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input"; // Add this line
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+
 import {
   IconNote,
   IconPlus,
-  IconSearch,
   IconTrash,
   IconCalendar,
   IconChevronLeft,
   IconChevronRight,
   IconChevronDown,
+  IconFilter,
+  IconArrowsSort,
+  IconCopy,
+  IconEdit,
 } from "@tabler/icons-react";
+
+interface Note {
+  id: number;
+  title: string;
+  content: string;
+  date: string;
+}
 
 export default function NotesPage() {
   const notes = [
@@ -99,6 +133,21 @@ export default function NotesPage() {
     },
   ];
 
+  const [isNewNoteDialogOpen, setIsNewNoteDialogOpen] = React.useState(false);
+  const [isViewNoteDialogOpen, setIsViewNoteDialogOpen] = React.useState(false);
+  const [selectedNote, setSelectedNote] = React.useState<Note | null>(null);
+  const [newNoteTitle, setNewNoteTitle] = React.useState("");
+  const [newNoteContent, setNewNoteContent] = React.useState("");
+
+  const handleCreateNote = () => {
+    // In a real application, you'd save this to a backend
+    console.log("Creating new note:", { newNoteTitle, newNoteContent });
+    setIsNewNoteDialogOpen(false);
+    setNewNoteTitle("");
+    setNewNoteContent("");
+    // You would typically re-fetch or update your notes list here
+  };
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -110,25 +159,123 @@ export default function NotesPage() {
             Manage your thoughts and quick captures in one place.
           </p>
         </div>
-        <Button size="sm" className="w-fit">
-          <IconPlus className="mr-2 h-4 w-4" />
-          New Note
-        </Button>
+        <Dialog
+          open={isNewNoteDialogOpen}
+          onOpenChange={setIsNewNoteDialogOpen}
+        >
+          <DialogTrigger asChild>
+            <Button size="sm" className="w-fit">
+              <IconPlus className="mr-2 h-4 w-4" />
+              New Note
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Note</DialogTitle>
+              <DialogDescription>
+                Enter a title and content for your new note.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  placeholder="Untitled Note"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="content">Content</Label>
+                <Textarea
+                  id="content"
+                  value={newNoteContent}
+                  onChange={(e) => setNewNoteContent(e.target.value)}
+                  placeholder="Start typing your note here..."
+                  className="min-h-[100px]"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsNewNoteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateNote}>Save Note</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="relative w-full max-w-sm">
-        <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search your notes..."
-          className="pl-9 bg-muted/30 border-none ring-1 ring-border focus-visible:ring-ring"
-        />
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 px-3 border-none ring-1 ring-border bg-muted/30 hover:bg-muted/50"
+            >
+              <IconFilter size={16} />
+              <span className="text-xs font-medium">Filter</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 rounded-xl">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Filter by Category
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem checked className="text-xs">
+              Work
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem className="text-xs">
+              Personal
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem className="text-xs">
+              Ideas
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 px-3 border-none ring-1 ring-border bg-muted/30 hover:bg-muted/50"
+            >
+              <IconArrowsSort size={16} />
+              <span className="text-xs font-medium">Sort</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 rounded-xl">
+            <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Sort by
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-xs">
+              Date Created
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-xs">
+              Alphabetical
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-xs">
+              Recently Viewed
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {notes.map((note) => (
           <Card
             key={note.id}
+            onClick={() => {
+              setSelectedNote(note);
+              setIsViewNoteDialogOpen(true);
+            }}
             className="group flex flex-col h-[180px] cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all duration-200 shadow-sm border-border/50"
           >
             <CardHeader className="p-3 pb-1 space-y-0 flex-none">
@@ -139,6 +286,11 @@ export default function NotesPage() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Handle delete
+                    console.log("Delete note:", note.id);
+                  }}
                   className="h-6 w-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
                 >
                   <IconTrash size={12} />
@@ -196,6 +348,57 @@ export default function NotesPage() {
           </div>
         </div>
       </div>
+
+      {/* View Note Detail Dialog */}
+      {selectedNote && (
+        <Dialog
+          open={isViewNoteDialogOpen}
+          onOpenChange={setIsViewNoteDialogOpen}
+        >
+          <DialogContent className="sm:max-w-[600px] rounded-xl p-0 overflow-hidden">
+            <div className="p-8 space-y-6">
+              <DialogHeader>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 uppercase tracking-widest font-semibold">
+                  <IconCalendar size={14} />
+                  <span>Created {selectedNote.date}</span>
+                </div>
+                <DialogTitle className="text-2xl font-bold leading-tight">
+                  {selectedNote.title}
+                </DialogTitle>
+              </DialogHeader>
+
+              <Separator />
+
+              <div className="text-sm md:text-base leading-relaxed text-muted-foreground whitespace-pre-wrap max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+                {selectedNote.content}
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="h-8 gap-2">
+                    <IconCopy size={14} />
+                    <span className="text-xs">Copy</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-8 gap-2">
+                    <IconEdit size={14} />
+                    <span className="text-xs">Edit</span>
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsViewNoteDialogOpen(false)}
+                  className="text-xs"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

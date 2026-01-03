@@ -153,12 +153,12 @@ export default function ResumesPage() {
             <IconDownload size={16} className="mr-2" />
             Download
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
+          {/*<Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
             <IconPrinter size={18} className="text-muted-foreground" />
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
             <IconMaximize size={18} className="text-muted-foreground" />
-          </Button>
+          </Button>*/}
         </div>
       </div>
 

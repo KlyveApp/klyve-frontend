@@ -61,7 +61,7 @@ const data = {
     // },
     //
     {
-      title: "People Pulse",
+      title: "Search Connect",
       url: "/search",
       icon: IconSearch,
     },

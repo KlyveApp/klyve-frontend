@@ -78,7 +78,7 @@ export default function PeopleSearchPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto w-full">
       {/* Search Header Section */}
       <div className="flex flex-col items-center gap-4 w-full max-w-3xl mx-auto mb-4">
-        <h1 className="text-3xl font-bold tracking-tight">People Pulse</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Search Connect</h1>
         <div className="relative w-full">
           <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
