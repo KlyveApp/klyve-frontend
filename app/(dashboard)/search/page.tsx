@@ -16,6 +16,9 @@ import {
   IconStar,
   IconFilter,
   IconDotsVertical,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 
@@ -75,7 +78,7 @@ export default function PeopleSearchPage() {
     <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto w-full">
       {/* Search Header Section */}
       <div className="flex flex-col items-center gap-4 w-full max-w-3xl mx-auto mb-4">
-        <h1 className="text-3xl font-bold tracking-tight">People Search</h1>
+        <h1 className="text-3xl font-bold tracking-tight">People Pulse</h1>
         <div className="relative w-full">
           <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -148,6 +151,37 @@ export default function PeopleSearchPage() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination UI */}
+          <div className="flex items-center justify-between px-2 pt-4">
+            <p className="text-xs text-muted-foreground font-medium">
+              Showing <span className="text-foreground">1-4</span> of{" "}
+              <span className="text-foreground">12</span> results
+            </p>
+            <div className="flex items-center gap-6 lg:gap-8">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium">Rows</p>
+                <div className="h-8 w-[60px] border rounded-lg flex items-center justify-between px-2 text-[11px] bg-card cursor-pointer hover:bg-muted/50 transition-colors">
+                  10 <IconChevronDown className="h-3.5 w-3.5 opacity-50" />
+                </div>
+              </div>
+              <div className="flex w-[80px] items-center justify-center text-xs font-medium">
+                Page 1 of 2
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-8 w-8 p-0 rounded-lg"
+                  disabled
+                >
+                  <IconChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" className="h-8 w-8 p-0 rounded-lg">
+                  <IconChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

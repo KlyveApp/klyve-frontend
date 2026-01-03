@@ -49,7 +49,7 @@ export default function NotificationsPage() {
               <div className="flex-1 space-y-1">
                 <Label>Workspace updates</Label>
                 <p className="text-sm text-muted-foreground">
-                  Get notified when members join or documents are shared.
+                  Get notified when new updates or tasks appear.
                 </p>
               </div>
               <Button variant="outline" size="sm">
@@ -96,7 +96,7 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {/*<Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <IconDeviceMobile className="h-4 w-4" />
@@ -119,7 +119,7 @@ export default function NotificationsPage() {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </Card>*/}
 
         <div className="flex justify-end">
           <Button>Save Preferences</Button>

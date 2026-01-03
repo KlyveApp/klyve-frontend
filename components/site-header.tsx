@@ -23,7 +23,7 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">Workspace</h1>
         <div className="ml-auto flex items-center gap-2">
-          <DropdownMenu>
+          {/*<DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <IconBell className="h-5 w-5" />
@@ -64,7 +64,7 @@ export function SiteHeader() {
                 View all notifications
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>*/}
         </div>
       </div>
     </header>

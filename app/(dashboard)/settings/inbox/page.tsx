@@ -34,7 +34,7 @@ export default function InboxSettingsPage() {
       <Separator />
 
       <div className="space-y-6">
-        <Card>
+        {/*<Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <IconFilter className="h-4 w-4" />
@@ -82,7 +82,7 @@ export default function InboxSettingsPage() {
               </Select>
             </div>
           </CardContent>
-        </Card>
+        </Card>*/}
 
         <Card>
           <CardHeader>
@@ -117,7 +117,7 @@ export default function InboxSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {/*<Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <IconMailForward className="h-4 w-4" />
@@ -143,7 +143,7 @@ export default function InboxSettingsPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card>*/}
 
         <div className="flex justify-end">
           <Button>Save Inbox Rules</Button>

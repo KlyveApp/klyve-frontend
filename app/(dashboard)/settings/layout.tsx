@@ -29,11 +29,11 @@ const sidebarNavItems = [
     href: "/settings/profile",
     icon: IconUser,
   },
-  {
-    title: "Account Settings",
-    href: "/settings/account",
-    icon: IconSettings,
-  },
+  // {
+  //   title: "Account Settings",
+  //   href: "/settings/account",
+  //   icon: IconSettings,
+  // },
   {
     title: "Billing",
     href: "/settings/billing",
@@ -59,21 +59,21 @@ const sidebarNavItems = [
     href: "/settings/inbox",
     icon: IconInbox,
   },
-  {
-    title: "Calendar",
-    href: "/settings/calendar",
-    icon: IconCalendar,
-  },
+  // {
+  //   title: "Calendar",
+  //   href: "/settings/calendar",
+  //   icon: IconCalendar,
+  // },
   {
     title: "Security & Privacy",
     href: "/settings/security",
     icon: IconLock,
   },
-  {
-    title: "Agents and Models",
-    href: "/settings/agents",
-    icon: IconRobot,
-  },
+  // {
+  //   title: "Agents and Models",
+  //   href: "/settings/agents",
+  //   icon: IconRobot,
+  // },
 ];
 
 export default function SettingsLayout({ children }: SettingsLayoutProps) {

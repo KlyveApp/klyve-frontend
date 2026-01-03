@@ -34,7 +34,7 @@ export default function ConfigurationsPage() {
       <Separator />
 
       <div className="space-y-6">
-        <Card>
+        {/*<Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <IconPalette className="h-4 w-4" />
@@ -82,7 +82,7 @@ export default function ConfigurationsPage() {
               </Select>
             </div>
           </CardContent>
-        </Card>
+        </Card>*/}
 
         <Card>
           <CardHeader>
@@ -91,11 +91,11 @@ export default function ConfigurationsPage() {
               Localization
             </CardTitle>
             <CardDescription>
-              Set your preferred language and regional formats.
+              Set your preferred regional format.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/*<div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Language</Label>
                 <p className="text-xs text-muted-foreground">
@@ -112,7 +112,7 @@ export default function ConfigurationsPage() {
                   <SelectItem value="fr">French</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div>*/}
             <Separator />
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">

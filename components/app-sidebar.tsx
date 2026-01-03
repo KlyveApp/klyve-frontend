@@ -49,36 +49,38 @@ const data = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: IconHomeSpark,
-    },
+    // {
+    //   title: "Dashboard",
+    //   url: "/dashboard",
+    //   icon: IconHomeSpark,
+    // },
     // {
     //   title: "Chat",
     //   url: "/chat",
     //   icon: IconSparkles,
     // },
+    //
+    {
+      title: "People Pulse",
+      url: "/search",
+      icon: IconSearch,
+    },
     {
       title: "Inbox",
       url: "/inbox",
       icon: IconMailSpark,
     },
-    {
-      title: "People Search",
-      url: "/search",
-      icon: IconSearch,
-    },
+
     {
       title: "My Network",
       url: "/network",
       icon: IconUsers,
     },
-    {
-      title: "Calendar",
-      url: "/calendar",
-      icon: IconCalendarBolt,
-    },
+    // {
+    //   title: "Calendar",
+    //   url: "/calendar",
+    //   icon: IconCalendarBolt,
+    // },
   ],
   navClouds: [
     {
@@ -134,11 +136,11 @@ const data = {
       url: "/settings/profile",
       icon: IconSettings,
     },
-    {
-      title: "Get Help",
-      url: "/help",
-      icon: IconHelp,
-    },
+    // {
+    //   title: "Get Help",
+    //   url: "/help",
+    //   icon: IconHelp,
+    // },
   ],
   documents: [
     {
@@ -146,21 +148,21 @@ const data = {
       url: "/documents/resumes",
       icon: IconFileCv,
     },
-    {
-      name: "Profile Pictures",
-      url: "/documents/profile-pictures",
-      icon: IconUserBolt,
-    },
+    // {
+    //   name: "Profile Pictures",
+    //   url: "/documents/profile-pictures",
+    //   icon: IconUserBolt,
+    // },
     {
       name: "Notes",
       url: "/documents/notes",
       icon: IconNote,
     },
-    {
-      name: "Documents",
-      url: "/documents/all",
-      icon: IconFileWord,
-    },
+    // {
+    //   name: "Documents",
+    //   url: "/documents/all",
+    //   icon: IconFileWord,
+    // },
   ],
 };
 
@@ -174,7 +176,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="/dashboard">
+              <a href="/inbox">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">klyve</span>
               </a>

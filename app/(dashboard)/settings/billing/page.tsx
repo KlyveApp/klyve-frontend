@@ -8,7 +8,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { IconCreditCard, IconCheck, IconCircleCheck } from "@tabler/icons-react";
+import {
+  IconCreditCard,
+  IconCheck,
+  IconCircleCheck,
+} from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function BillingPage() {
@@ -28,7 +32,8 @@ export default function BillingPage() {
           <CardHeader>
             <CardTitle>Subscription Plan</CardTitle>
             <CardDescription>
-              You are currently on the <span className="font-semibold text-foreground">Pro Plan</span>.
+              You are currently on the{" "}
+              <span className="font-semibold text-foreground">Pro Plan</span>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -90,13 +95,13 @@ export default function BillingPage() {
 
         {/* Billing Address / Email */}
         <div className="grid gap-4">
-          <h4 className="text-sm font-medium">Billing Email</h4>
+          {/*<h4 className="text-sm font-medium">Billing Email</h4>*/}
           <p className="text-sm text-muted-foreground">
-            Send invoices to <span className="font-medium text-foreground">m@example.com</span>
+            All invoices are sent to the email associated with the account.
           </p>
-          <Button variant="link" className="h-auto p-0 justify-start text-xs">
+          {/*<Button variant="link" className="h-auto p-0 justify-start text-xs">
             Change billing email
-          </Button>
+          </Button>*/}
         </div>
       </div>
     </div>
