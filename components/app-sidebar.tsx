@@ -1,28 +1,37 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   IconCamera,
   IconChartBar,
   IconDashboard,
   IconDatabase,
   IconFileAi,
+  IconFileCv,
   IconFileDescription,
   IconFileWord,
   IconFolder,
   IconHelp,
+  IconCalendarBolt,
+  IconLayoutDashboard,
   IconInnerShadowTop,
   IconListDetails,
+  IconInputSearch,
   IconReport,
+  IconNote,
+  IconUserBolt,
   IconSearch,
+  IconMailSpark,
   IconSettings,
   IconUsers,
-} from "@tabler/icons-react"
+  IconHomeSpark,
+  IconSparkles,
+} from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavDocuments } from "@/components/nav-documents";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -31,7 +40,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 const data = {
   user: {
@@ -42,28 +51,33 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
+      url: "/dashboard",
+      icon: IconHomeSpark,
+    },
+    // {
+    //   title: "Chat",
+    //   url: "/chat",
+    //   icon: IconSparkles,
+    // },
+    {
+      title: "Inbox",
+      url: "/inbox",
+      icon: IconMailSpark,
     },
     {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
+      title: "People Search",
+      url: "/search",
+      icon: IconSearch,
     },
     {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
+      title: "My Network",
+      url: "/network",
       icon: IconUsers,
+    },
+    {
+      title: "Calendar",
+      url: "/calendar",
+      icon: IconCalendarBolt,
     },
   ],
   navClouds: [
@@ -117,38 +131,38 @@ const data = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/settings/profile",
       icon: IconSettings,
     },
     {
       title: "Get Help",
-      url: "#",
+      url: "/help",
       icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
     },
   ],
   documents: [
     {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
+      name: "Resumes",
+      url: "/documents/resumes",
+      icon: IconFileCv,
     },
     {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
+      name: "Profile Pictures",
+      url: "/documents/profile-pictures",
+      icon: IconUserBolt,
     },
     {
-      name: "Word Assistant",
-      url: "#",
+      name: "Notes",
+      url: "/documents/notes",
+      icon: IconNote,
+    },
+    {
+      name: "Documents",
+      url: "/documents/all",
       icon: IconFileWord,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -160,9 +174,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <a href="/dashboard">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">klyve</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -177,5 +191,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
