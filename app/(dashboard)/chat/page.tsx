@@ -4,17 +4,24 @@ import * as React from "react";
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { IconArrowUp, IconSparkles, IconPaperclip } from "@tabler/icons-react";
+// Import Dialog components from your UI folder
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function ChatPage() {
   const [input, setInput] = React.useState("");
+  const [isSoonOpen, setIsSoonOpen] = React.useState(false); // Popup state
 
-  // Destructure and provide a fallback check
   const chat = useChat({
     api: "/api/chat",
   });
 
   const { messages, append } = chat;
-
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   React.useEffect(() => {
@@ -30,26 +37,46 @@ export default function ChatPage() {
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const trimmedInput = input.trim();
-    if (!trimmedInput || !append) return; // Guard clause
+    if (!input.trim()) return;
 
-    setInput("");
-    await append({
-      role: "user",
-      content: trimmedInput,
-    });
+    // Show popup instead of sending
+    setIsSoonOpen(true);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      const form = e.currentTarget.form;
-      if (form) form.requestSubmit();
+      if (input.trim()) setIsSoonOpen(true);
     }
   };
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-var(--header-height))] bg-background">
+      {/* --- COMING SOON POPUP OVERLAY --- */}
+      <Dialog open={isSoonOpen} onOpenChange={setIsSoonOpen}>
+        <DialogContent className="sm:max-w-[400px] rounded-3xl">
+          <DialogHeader className="flex flex-col items-center gap-2 pt-4">
+            <div className="p-3 rounded-2xl bg-emerald-500 text-white shadow-emerald-200 shadow-lg">
+              <IconSparkles size={28} />
+            </div>
+            <DialogTitle className="text-xl">Coming Soon</DialogTitle>
+            <DialogDescription className="text-center px-2">
+              Klyve's AI engine is currently in training. We'll be live for chat
+              very soon!
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center pb-4">
+            <Button
+              onClick={() => setIsSoonOpen(false)}
+              className="rounded-full px-10 bg-emerald-500 hover:bg-emerald-600"
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- WELCOME SCREEN (Centered) --- */}
       {messages.length === 0 && (
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-500">
@@ -71,8 +98,7 @@ export default function ChatPage() {
                   variant="outline"
                   size="sm"
                   className="rounded-full text-xs bg-muted/50 hover:bg-muted"
-                  // Use optional chaining or check for existence
-                  onClick={() => append?.({ role: "user", content: prompt })}
+                  onClick={() => setIsSoonOpen(true)} // Prompts also trigger popup
                 >
                   {prompt}
                 </Button>
@@ -82,6 +108,7 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* --- CHAT HISTORY --- */}
       {messages.length > 0 && (
         <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-3xl mx-auto w-full pt-8">
           {messages.map((m) => (
@@ -103,6 +130,7 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* --- INPUT AREA --- */}
       <div className="w-full max-w-3xl mx-auto px-4 pb-8 pt-2">
         <form
           onSubmit={onSubmit}
@@ -113,6 +141,7 @@ export default function ChatPage() {
             variant="ghost"
             size="icon"
             className="h-10 w-10 rounded-xl shrink-0"
+            onClick={() => setIsSoonOpen(true)}
           >
             <IconPaperclip size={20} />
           </Button>
@@ -130,7 +159,9 @@ export default function ChatPage() {
           <Button
             type="submit"
             size="icon"
-            className={`h-10 w-10 rounded-xl shrink-0 ${input.trim() ? "bg-primary" : "bg-muted"}`}
+            className={`h-10 w-10 rounded-xl shrink-0 transition-colors ${
+              input.trim() ? "bg-emerald-500 text-white" : "bg-muted"
+            }`}
             disabled={!input.trim()}
           >
             <IconArrowUp size={20} />

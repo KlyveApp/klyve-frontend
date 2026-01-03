@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,9 +41,7 @@ export default function NotificationsPage() {
                   Receive alerts about suspicious account activity.
                 </p>
               </div>
-              <Button variant="outline" size="sm">
-                Enabled
-              </Button>
+              <Switch defaultChecked />
             </div>
             <Separator />
             <div className="flex items-center justify-between space-x-4">
@@ -52,9 +51,7 @@ export default function NotificationsPage() {
                   Get notified when new updates or tasks appear.
                 </p>
               </div>
-              <Button variant="outline" size="sm">
-                Enabled
-              </Button>
+              <Switch defaultChecked />
             </div>
           </CardContent>
         </Card>
@@ -77,9 +74,7 @@ export default function NotificationsPage() {
                   A summary of your workspace activity from the past week.
                 </p>
               </div>
-              <Button variant="outline" size="sm">
-                Enabled
-              </Button>
+              <Switch defaultChecked />
             </div>
             <Separator />
             <div className="flex items-center justify-between space-x-4">
@@ -89,9 +84,7 @@ export default function NotificationsPage() {
                   Receive news about features and product updates.
                 </p>
               </div>
-              <Button variant="outline" size="sm">
-                Disabled
-              </Button>
+              <Switch />
             </div>
           </CardContent>
         </Card>
