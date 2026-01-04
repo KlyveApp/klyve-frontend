@@ -25,7 +25,7 @@ interface SettingsLayoutProps {
 
 const sidebarNavItems = [
   {
-    title: "Profile Info",
+    title: "Account",
     href: "/settings/profile",
     icon: IconUser,
   },

@@ -86,10 +86,10 @@ export default function PeopleSearchPage() {
             className="h-14 pl-12 pr-24 text-lg rounded-2xl bg-muted/50 border-none ring-1 ring-border focus-visible:ring-ring focus-visible:bg-background transition-all"
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Button size="sm" variant="secondary" className="rounded-xl h-9">
+            {/*<Button size="sm" variant="secondary" className="rounded-xl h-9">
               <IconFilter className="h-4 w-4 mr-2" />
               Filters
-            </Button>
+            </Button>*/}
           </div>
         </div>
       </div>

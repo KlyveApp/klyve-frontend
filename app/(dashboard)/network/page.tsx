@@ -6,12 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
@@ -255,6 +258,8 @@ export default function NetworkPage() {
   ];
 
   const [isProfileDialogOpen, setIsProfileDialogOpen] = React.useState(false);
+  const [isAddContactDialogOpen, setIsAddContactDialogOpen] =
+    React.useState(false);
   const [selectedContact, setSelectedContact] = React.useState<Contact | null>(
     null,
   );
@@ -273,7 +278,7 @@ export default function NetworkPage() {
             Manage your connections and collaborators.
           </p>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setIsAddContactDialogOpen(true)}>
           <IconUserPlus className="mr-2 h-4 w-4" />
           Add Contact
         </Button>
@@ -449,6 +454,74 @@ export default function NetworkPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog
+        open={isAddContactDialogOpen}
+        onOpenChange={setIsAddContactDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Contact</DialogTitle>
+            <DialogDescription>
+              Enter the details of the new person you'd like to add to your
+              network.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" placeholder="e.g. Jane Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Role / Job Title</Label>
+                <Input id="role" placeholder="e.g. Product Manager" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Input id="company" placeholder="e.g. Acme Corp" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input id="email" type="email" placeholder="jane@example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tags">Tags (comma separated)</Label>
+              <Input id="tags" placeholder="e.g. Design, Remote, Hiring" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio / Notes</Label>
+              <Textarea
+                id="bio"
+                placeholder="Enter a brief bio or notes about this contact..."
+                className="resize-none min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddContactDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => setIsAddContactDialogOpen(false)}>
+              Save Contact
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
