@@ -23,7 +23,7 @@ export default function DashboardPage() {
               Welcome back, Alex.
             </h1>
             <p className="text-muted-foreground font-medium mt-1">
-              Here is what&apos;s happening across your pipeline today.
+              Here is what&apos;s happening across your network today.
             </p>
           </div>
           <div className="flex gap-3">
@@ -31,7 +31,7 @@ export default function DashboardPage() {
               href="/sourcing"
               className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-md text-sm font-medium hover:bg-primary/90 transition-all shadow-sm"
             >
-              <Search size={16} /> Find Candidates
+              <Search size={16} /> Start Sourcing
             </Link>
           </div>
         </div>
