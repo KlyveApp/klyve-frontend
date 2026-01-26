@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell } from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname();
@@ -28,13 +27,6 @@ export default function Header() {
 
       {/* RIGHT SIDE: Profile Link */}
       <div className="flex items-center gap-4">
-        {/* Notification Icon */}
-        <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-full transition-colors">
-          <Bell size={18} />
-        </button>
-
-        <div className="h-6 w-px bg-border hidden sm:block" />
-
         <Link href="/profile" className="flex items-center gap-3 group pl-2">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-none">
