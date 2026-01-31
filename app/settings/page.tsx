@@ -12,6 +12,9 @@ import {
   Lock,
   Sparkles,
   Search,
+  CheckCircle,
+  Loader2,
+  Save,
 } from "lucide-react";
 
 type Section = "billing" | "security" | "notifications" | "general";
@@ -20,8 +23,35 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("general");
   const [searchesRemaining, setSearchesRemaining] = useState(5);
   const [totalSearches, setTotalSearches] = useState(5);
+  const [user, setUser] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Settings state
+  const [settings, setSettings] = useState({
+    timezone: 'Central Time (US & Canada)',
+    emailNotifications: true,
+    marketingEmails: false,
+    darkMode: false,
+  });
 
   React.useEffect(() => {
+    // Load user data and settings
+    fetch('/api/user?email=admin@klyve.com')
+      .then(res => res.ok ? res.json() : null)
+      .then(userData => {
+        if (userData) {
+          setUser(userData);
+          setSettings({
+            timezone: userData.timezone || 'Central Time (US & Canada)',
+            emailNotifications: userData.email_notifications ?? true,
+            marketingEmails: userData.marketing_emails ?? false,
+            darkMode: userData.dark_mode ?? false,
+          });
+        }
+      })
+      .catch(err => console.error('Error loading user:', err));
+    
     // Load search quota
     fetch('/api/search-quota')
       .then(res => res.ok ? res.json() : null)
@@ -33,6 +63,44 @@ export default function SettingsPage() {
       })
       .catch(err => console.error('Error loading quota:', err));
   }, []);
+  
+  const handleSettingChange = (key: string, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setSaveSuccess(false);
+  };
+  
+  const saveSettings = async () => {
+    if (!user) return;
+    
+    setSaving(true);
+    setSaveSuccess(false);
+    
+    try {
+      const updates = {
+        timezone: settings.timezone,
+        email_notifications: settings.emailNotifications,
+        dark_mode: settings.darkMode,
+        marketing_emails: settings.marketingEmails,
+      };
+      
+      const res = await fetch('/api/user/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, updates })
+      });
+      
+      if (res.ok) {
+        setSaveSuccess(true);
+      } else {
+        alert('Failed to save settings');
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Sidebar Items Definition
   const menuItems = [
@@ -99,16 +167,73 @@ export default function SettingsPage() {
                         Timezone
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Current: (GMT-06:00) Central Time
+                        Current: {settings.timezone}
                       </p>
                     </div>
                   </div>
-                  <select className="bg-background border border-input rounded-md text-sm px-3 py-1.5 outline-none focus:ring-1 focus:ring-ring">
+                  <select 
+                    value={settings.timezone}
+                    onChange={(e) => handleSettingChange('timezone', e.target.value)}
+                    className="bg-background border border-input rounded-md text-sm px-3 py-1.5 outline-none focus:ring-1 focus:ring-ring"
+                  >
                     <option>Central Time (US & Canada)</option>
                     <option>Eastern Time (US & Canada)</option>
                     <option>Pacific Time (US & Canada)</option>
+                    <option>Mountain Time (US & Canada)</option>
+                    <option>UTC</option>
                   </select>
                 </div>
+              </div>
+              
+              <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-secondary rounded-md text-foreground">
+                      <SettingsIcon size={18} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Dark Mode
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Toggle dark mode appearance
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={settings.darkMode}
+                    onChange={(e) => handleSettingChange('darkMode', e.target.checked)}
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary"
+                  />
+                </div>
+              </div>
+              
+              {saveSuccess && (
+                <div className="flex items-center gap-2 text-emerald-600 p-4 bg-emerald-500/10 rounded-lg">
+                  <CheckCircle size={16} />
+                  <span className="text-sm font-medium">Settings saved successfully!</span>
+                </div>
+              )}
+              
+              <div className="flex justify-end">
+                <button 
+                  onClick={saveSettings}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium text-sm hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      Save Settings
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}
@@ -246,7 +371,8 @@ export default function SettingsPage() {
                   </div>
                   <input
                     type="checkbox"
-                    defaultChecked
+                    checked={settings.emailNotifications}
+                    onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
                     className="h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary"
                   />
                 </div>
@@ -265,9 +391,38 @@ export default function SettingsPage() {
                   </div>
                   <input
                     type="checkbox"
+                    checked={settings.marketingEmails}
+                    onChange={(e) => handleSettingChange('marketingEmails', e.target.checked)}
                     className="h-4 w-4 rounded border-input text-primary focus:ring-primary accent-primary"
                   />
                 </div>
+              </div>
+              
+              {saveSuccess && (
+                <div className="flex items-center gap-2 text-emerald-600 p-4 bg-emerald-500/10 rounded-lg">
+                  <CheckCircle size={16} />
+                  <span className="text-sm font-medium">Notification settings saved!</span>
+                </div>
+              )}
+              
+              <div className="flex justify-end">
+                <button 
+                  onClick={saveSettings}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium text-sm hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      Save Settings
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           )}

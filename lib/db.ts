@@ -279,13 +279,13 @@ export async function getUserById(userId: string) {
     const result = await client.query(
       `SELECT id, email, name, avatar_url, role, total_searches, used_searches, 
         total_searches - used_searches as remaining_searches, reset_date, company, 
-        title, phone, bio, timezone, email_notifications, dark_mode, created_at, updated_at
+        title, phone, bio, timezone, email_notifications, dark_mode, marketing_emails, created_at, updated_at
       FROM users 
       WHERE id = $1`,
       [userId]
     );
     return result.rows[0];
-  } finally {
+  }  finally {
     client.release();
   }
 }
@@ -296,7 +296,7 @@ export async function getUserByEmail(email: string) {
     const result = await client.query(
       `SELECT id, email, name, avatar_url, role, total_searches, used_searches,
         total_searches - used_searches as remaining_searches, reset_date, company,
-        title, phone, bio, timezone, email_notifications, dark_mode, created_at, updated_at
+        title, phone, bio, timezone, email_notifications, dark_mode, marketing_emails, created_at, updated_at
       FROM users 
       WHERE email = $1`,
       [email]
@@ -316,6 +316,7 @@ export async function updateUser(userId: string, updates: {
   timezone?: string;
   email_notifications?: boolean;
   dark_mode?: boolean;
+  marketing_emails?: boolean;
 }) {
   const client = await pool.connect();
   try {
@@ -363,6 +364,11 @@ export async function updateUser(userId: string, updates: {
       values.push(updates.dark_mode);
       paramIndex++;
     }
+    if (updates.marketing_emails !== undefined) {
+      setClause.push(`marketing_emails = $${paramIndex}`);
+      values.push(updates.marketing_emails);
+      paramIndex++;
+    }
 
     if (setClause.length === 0) {
       return null;
@@ -393,6 +399,164 @@ export async function resetUserSearchQuota(userId: string) {
       [userId]
     );
     return result.rows[0]?.remaining || 5;
+  } finally {
+    client.release();
+  }
+}
+
+// Notes-related functions
+export interface Note {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function getNotes(userId?: string) {
+  const client = await pool.connect();
+  try {
+    if (userId) {
+      const result = await client.query(
+        `SELECT id, user_id, title, content, tags, created_at, updated_at 
+        FROM notes 
+        WHERE user_id = $1 
+        ORDER BY updated_at DESC`,
+        [userId]
+      );
+      return result.rows;
+    } else {
+      const result = await client.query(
+        `SELECT id, user_id, title, content, tags, created_at, updated_at 
+        FROM notes 
+        ORDER BY updated_at DESC`
+      );
+      return result.rows;
+    }
+  } finally {
+    client.release();
+  }
+}
+
+export async function getNoteById(noteId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, user_id, title, content, tags, created_at, updated_at 
+      FROM notes 
+      WHERE id = $1`,
+      [noteId]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function createNote(note: {
+  user_id: string;
+  title: string;
+  content: string;
+  tags?: string[];
+}) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO notes (user_id, title, content, tags)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, user_id, title, content, tags, created_at, updated_at`,
+      [note.user_id, note.title, note.content, note.tags || []]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateNote(noteId: string, updates: {
+  title?: string;
+  content?: string;
+  tags?: string[];
+}) {
+  const client = await pool.connect();
+  try {
+    const setClause: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (updates.title !== undefined) {
+      setClause.push(`title = $${paramIndex}`);
+      values.push(updates.title);
+      paramIndex++;
+    }
+    if (updates.content !== undefined) {
+      setClause.push(`content = $${paramIndex}`);
+      values.push(updates.content);
+      paramIndex++;
+    }
+    if (updates.tags !== undefined) {
+      setClause.push(`tags = $${paramIndex}`);
+      values.push(updates.tags);
+      paramIndex++;
+    }
+
+    if (setClause.length === 0) {
+      return null;
+    }
+
+    values.push(noteId);
+    const result = await client.query(
+      `UPDATE notes 
+      SET ${setClause.join(', ')}, updated_at = NOW()
+      WHERE id = $${paramIndex}
+      RETURNING id, user_id, title, content, tags, created_at, updated_at`,
+      values
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteNote(noteId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `DELETE FROM notes 
+      WHERE id = $1
+      RETURNING id`,
+      [noteId]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function searchNotes(query: string, userId?: string) {
+  const client = await pool.connect();
+  try {
+    if (userId) {
+      const result = await client.query(
+        `SELECT id, user_id, title, content, tags, created_at, updated_at 
+        FROM notes 
+        WHERE user_id = $1 AND (title ILIKE $2 OR content ILIKE $2)
+        ORDER BY updated_at DESC`,
+        [userId, `%${query}%`]
+      );
+      return result.rows;
+    } else {
+      const result = await client.query(
+        `SELECT id, user_id, title, content, tags, created_at, updated_at 
+        FROM notes 
+        WHERE title ILIKE $1 OR content ILIKE $1
+        ORDER BY updated_at DESC`,
+        [`%${query}%`]
+      );
+      return result.rows;
+    }
   } finally {
     client.release();
   }

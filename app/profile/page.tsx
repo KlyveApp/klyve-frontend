@@ -10,12 +10,41 @@ import {
   Save,
   Camera,
   Search,
+  Loader2,
+  CheckCircle,
 } from "lucide-react";
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  company: string;
+  title: string;
+  phone: string;
+  bio: string;
+  avatar_url?: string;
+  remaining_searches: number;
+}
+
 export default function ProfilePage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    city: "",
+    state: "",
+    university: "",
+    major: "",
+    gradYear: "",
+    bio: "",
+    company: "",
+    title: "",
+    phone: "",
+  });
   const [searchesRemaining, setSearchesRemaining] = useState(5);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     loadUserData();
@@ -25,19 +54,27 @@ export default function ProfilePage() {
     try {
       setLoading(true);
       // For demo purposes, using a default user email
-      // In production, this would come from authentication
-      const userRes = await fetch('/api/user?email=alex.rivera@example.com');
+      const userRes = await fetch('/api/user?email=admin@klyve.com');
       if (userRes.ok) {
         const userData = await userRes.json();
         setUser(userData);
         setSearchesRemaining(userData.remaining_searches || 5);
-      } else {
-        // If no user found, use default quota
-        const quotaRes = await fetch('/api/search-quota');
-        if (quotaRes.ok) {
-          const quota = await quotaRes.json();
-          setSearchesRemaining(quota.remaining);
-        }
+        
+        // Split name into first and last
+        const nameParts = userData.name ? userData.name.split(' ') : ['', ''];
+        setFormData({
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          city: userData.city || '',
+          state: userData.state || '',
+          university: userData.university || '',
+          major: userData.major || '',
+          gradYear: userData.grad_year || '',
+          bio: userData.bio || '',
+          company: userData.company || '',
+          title: userData.title || '',
+          phone: userData.phone || '',
+        });
       }
     } catch (error) {
       console.error("Error loading user data:", error);
@@ -46,6 +83,60 @@ export default function ProfilePage() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setSaveSuccess(false);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setSaving(true);
+    setSaveSuccess(false);
+    
+    try {
+      const updates = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        company: formData.company,
+        title: formData.title,
+        phone: formData.phone,
+        bio: formData.bio,
+      };
+      
+      const res = await fetch('/api/user/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, updates })
+      });
+      
+      if (res.ok) {
+        setSaveSuccess(true);
+        // Refresh user data
+        loadUserData();
+      } else {
+        console.error('Failed to save profile');
+        alert('Failed to save profile. Please try again.');
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert('Failed to save profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex-1 bg-muted/20 overflow-y-auto h-full p-6 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="animate-spin" size={20} />
+          <span>Loading profile...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 bg-muted/20 overflow-y-auto h-full p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -53,7 +144,7 @@ export default function ProfilePage() {
         <div className="bg-card rounded-lg p-6 border border-border shadow-sm flex flex-col md:flex-row items-center gap-6">
           <div className="relative group cursor-pointer">
             <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground text-3xl font-semibold border border-border transition-all group-hover:bg-secondary/80">
-              AR
+              {formData.firstName[0]}{formData.lastName[0]}
             </div>
             <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
               <Camera className="text-white" size={24} />
@@ -62,10 +153,11 @@ export default function ProfilePage() {
 
           <div className="text-center md:text-left space-y-1">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Alex Rivera
+              {formData.firstName} {formData.lastName}
             </h1>
             <p className="text-muted-foreground font-medium text-sm">
-              Premium User
+              {formData.title || 'User'}
+              {formData.company && ` at ${formData.company}`}
             </p>
           </div>
         </div>
@@ -119,7 +211,10 @@ export default function ProfilePage() {
                     size={16}
                   />
                   <input
-                    defaultValue="Alex"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    placeholder="First Name"
                     className="w-full pl-9 pr-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                   />
                 </div>
@@ -129,7 +224,10 @@ export default function ProfilePage() {
                   Last Name
                 </label>
                 <input
-                  defaultValue="Rivera"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder="Last Name"
                   className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                 />
               </div>
@@ -143,7 +241,10 @@ export default function ProfilePage() {
                     size={16}
                   />
                   <input
-                    defaultValue="Austin"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    placeholder="City"
                     className="w-full pl-9 pr-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                   />
                 </div>
@@ -153,7 +254,38 @@ export default function ProfilePage() {
                   State
                 </label>
                 <input
-                  defaultValue="Texas"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleInputChange}
+                  placeholder="State"
+                  className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Job Info */}
+            <div className="pt-6 border-t border-border grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide ml-1">
+                  Company
+                </label>
+                <input
+                  name="company"
+                  value={formData.company}
+                  onChange={handleInputChange}
+                  placeholder="Current Company"
+                  className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide ml-1">
+                  Job Title
+                </label>
+                <input
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  placeholder="Job Title"
                   className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                 />
               </div>
@@ -169,7 +301,10 @@ export default function ProfilePage() {
                   </label>
                 </div>
                 <input
-                  defaultValue="University of Texas at Austin"
+                  name="university"
+                  value={formData.university}
+                  onChange={handleInputChange}
+                  placeholder="University"
                   className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                 />
               </div>
@@ -181,7 +316,10 @@ export default function ProfilePage() {
                   </label>
                 </div>
                 <input
-                  defaultValue="Computer Science"
+                  name="major"
+                  value={formData.major}
+                  onChange={handleInputChange}
+                  placeholder="Major"
                   className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                 />
               </div>
@@ -193,7 +331,10 @@ export default function ProfilePage() {
                   </label>
                 </div>
                 <input
-                  defaultValue="2026"
+                  name="gradYear"
+                  value={formData.gradYear}
+                  onChange={handleInputChange}
+                  placeholder="Graduation Year"
                   className="w-full px-3 py-2.5 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm transition-all"
                 />
               </div>
@@ -205,18 +346,41 @@ export default function ProfilePage() {
                 About Me
               </label>
               <textarea
+                name="bio"
+                value={formData.bio}
+                onChange={handleInputChange}
                 rows={5}
-                defaultValue="Aspiring software engineer with a passion for building clean, user-centric dashboard experiences. Currently focused on mastering the Next.js ecosystem and building the Nexus platform."
+                placeholder="Tell us about yourself..."
                 className="w-full p-3 bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring text-sm leading-relaxed resize-none transition-all"
               />
             </div>
           </div>
 
           {/* SAVE BUTTON FOOTER */}
-          <div className="bg-muted/30 px-6 py-4 border-t border-border flex justify-end">
-            <button className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium text-sm hover:bg-primary/90 transition-all shadow-sm">
-              <Save size={16} />
-              Save Profile
+          <div className="bg-muted/30 px-6 py-4 border-t border-border flex justify-between items-center">
+            {saveSuccess && (
+              <div className="flex items-center gap-2 text-emerald-600">
+                <CheckCircle size={16} />
+                <span className="text-sm font-medium">Profile saved successfully!</span>
+              </div>
+            )}
+            <div className="flex-1" />
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium text-sm hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  Save Profile
+                </>
+              )}
             </button>
           </div>
         </div>
