@@ -11,12 +11,28 @@ import {
   Mail,
   Lock,
   Sparkles,
+  Search,
 } from "lucide-react";
 
 type Section = "billing" | "security" | "notifications" | "general";
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("general");
+  const [searchesRemaining, setSearchesRemaining] = useState(5);
+  const [totalSearches, setTotalSearches] = useState(5);
+
+  React.useEffect(() => {
+    // Load search quota
+    fetch('/api/search-quota')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setSearchesRemaining(data.remaining);
+          setTotalSearches(data.total_searches);
+        }
+      })
+      .catch(err => console.error('Error loading quota:', err));
+  }, []);
 
   // Sidebar Items Definition
   const menuItems = [
@@ -105,7 +121,7 @@ export default function SettingsPage() {
                   Billing & Plan
                 </h2>
                 <p className="text-muted-foreground text-sm">
-                  Manage your subscription and invoices.
+                  Manage your subscription and search quota.
                 </p>
               </div>
 
@@ -122,6 +138,47 @@ export default function SettingsPage() {
                 {/* Visual Flair */}
                 <div className="absolute top-0 right-0 p-6 opacity-10">
                   <CreditCard size={100} />
+                </div>
+              </div>
+
+              {/* Search Quota Section */}
+              <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-2 bg-amber-500/10 rounded-md text-amber-600">
+                    <Search size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Search Quota</h3>
+                    <p className="text-sm text-muted-foreground">Daily search usage</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Searches</p>
+                      <p className="text-2xl font-bold text-foreground">{totalSearches}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Remaining</p>
+                      <p className="text-2xl font-bold text-amber-600">{searchesRemaining}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <p className="text-sm text-amber-600">
+                      You have {searchesRemaining} searches remaining today. Quota resets daily at midnight.
+                    </p>
+                  </div>
+                  
+                  {searchesRemaining === 0 && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                      <p className="text-sm text-red-600">
+                        You have used all your searches for today. Please try again tomorrow.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

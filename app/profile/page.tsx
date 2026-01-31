@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   User as UserIcon,
   MapPin,
@@ -9,9 +9,43 @@ import {
   Calendar,
   Save,
   Camera,
+  Search,
 } from "lucide-react";
 
 export default function ProfilePage() {
+  const [user, setUser] = useState<any>(null);
+  const [searchesRemaining, setSearchesRemaining] = useState(5);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      // For demo purposes, using a default user email
+      // In production, this would come from authentication
+      const userRes = await fetch('/api/user?email=alex.rivera@example.com');
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        setUser(userData);
+        setSearchesRemaining(userData.remaining_searches || 5);
+      } else {
+        // If no user found, use default quota
+        const quotaRes = await fetch('/api/search-quota');
+        if (quotaRes.ok) {
+          const quota = await quotaRes.json();
+          setSearchesRemaining(quota.remaining);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex-1 bg-muted/20 overflow-y-auto h-full p-6">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -34,6 +68,40 @@ export default function ProfilePage() {
               Premium User
             </p>
           </div>
+        </div>
+
+        {/* SEARCH QUOTA SECTION */}
+        <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-amber-500/10 rounded-md text-amber-600">
+              <Search size={18} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Search Quota</h2>
+              <p className="text-xs text-muted-foreground">Daily search limit</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-foreground">{searchesRemaining}</p>
+              <p className="text-xs text-muted-foreground">Searches Remaining</p>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-xs font-medium text-amber-600">
+                {searchesRemaining > 0 ? 'Active' : 'Limit Reached'}
+              </span>
+            </div>
+          </div>
+          
+          {searchesRemaining === 0 && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+              <p className="text-sm text-red-600">
+                You have used all your searches for today. Your quota will reset tomorrow.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* MAIN FORM SECTION */}
