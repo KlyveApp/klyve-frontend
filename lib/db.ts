@@ -9,12 +9,12 @@ if (!databaseUrl) {
 }
 
 // Use Pool for parameterized queries
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: databaseUrl,
 });
 
 // Keep neon for simple queries
-const sql = neon(databaseUrl);
+export const sql = neon(databaseUrl);
 
 // Database utility functions
 export async function getCandidates(
@@ -279,7 +279,8 @@ export async function getUserById(userId: string) {
     const result = await client.query(
       `SELECT id, email, name, avatar_url, role, total_searches, used_searches, 
         total_searches - used_searches as remaining_searches, reset_date, company, 
-        title, phone, bio, timezone, email_notifications, dark_mode, marketing_emails, created_at, updated_at
+        title, phone, bio, timezone, email_notifications, dark_mode, marketing_emails, 
+        city, state, university, major, grad_year, created_at, updated_at
       FROM users 
       WHERE id = $1`,
       [userId]
@@ -296,7 +297,8 @@ export async function getUserByEmail(email: string) {
     const result = await client.query(
       `SELECT id, email, name, avatar_url, role, total_searches, used_searches,
         total_searches - used_searches as remaining_searches, reset_date, company,
-        title, phone, bio, timezone, email_notifications, dark_mode, marketing_emails, created_at, updated_at
+        title, phone, bio, timezone, email_notifications, dark_mode, marketing_emails, 
+        city, state, university, major, grad_year, created_at, updated_at
       FROM users 
       WHERE email = $1`,
       [email]
@@ -317,6 +319,11 @@ export async function updateUser(userId: string, updates: {
   email_notifications?: boolean;
   dark_mode?: boolean;
   marketing_emails?: boolean;
+  city?: string;
+  state?: string;
+  university?: string;
+  major?: string;
+  grad_year?: string;
 }) {
   const client = await pool.connect();
   try {
@@ -367,6 +374,31 @@ export async function updateUser(userId: string, updates: {
     if (updates.marketing_emails !== undefined) {
       setClause.push(`marketing_emails = $${paramIndex}`);
       values.push(updates.marketing_emails);
+      paramIndex++;
+    }
+    if (updates.city !== undefined) {
+      setClause.push(`city = $${paramIndex}`);
+      values.push(updates.city);
+      paramIndex++;
+    }
+    if (updates.state !== undefined) {
+      setClause.push(`state = $${paramIndex}`);
+      values.push(updates.state);
+      paramIndex++;
+    }
+    if (updates.university !== undefined) {
+      setClause.push(`university = $${paramIndex}`);
+      values.push(updates.university);
+      paramIndex++;
+    }
+    if (updates.major !== undefined) {
+      setClause.push(`major = $${paramIndex}`);
+      values.push(updates.major);
+      paramIndex++;
+    }
+    if (updates.grad_year !== undefined) {
+      setClause.push(`grad_year = $${paramIndex}`);
+      values.push(updates.grad_year);
       paramIndex++;
     }
 
@@ -557,6 +589,681 @@ export async function searchNotes(query: string, userId?: string) {
       );
       return result.rows;
     }
+  } finally {
+    client.release();
+  }
+}
+
+// Outbox-related functions
+export interface OutboxThread {
+  id: string;
+  user_id: string;
+  recipient_name: string;
+  recipient_email: string;
+  recipient_role: string;
+  recipient_company: string;
+  recipient_location: string;
+  subject: string;
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OutboxEmail {
+  id: string;
+  thread_id: string;
+  sender_type: string;
+  body: string;
+  body_html?: string;
+  attachments: any;
+  created_at: Date;
+}
+
+export async function getOutboxThreads(userId?: string) {
+  const client = await pool.connect();
+  try {
+    let query: string;
+    let params: any[] = [];
+    
+    if (userId) {
+      query = `
+        SELECT 
+          t.*,
+          (SELECT body FROM outbox_emails WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) as latest_email_preview
+        FROM outbox_threads t
+        WHERE t.user_id = $1
+        ORDER BY t.updated_at DESC
+      `;
+      params = [userId];
+    } else {
+      query = `
+        SELECT 
+          t.*,
+          (SELECT body FROM outbox_emails WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) as latest_email_preview
+        FROM outbox_threads t
+        ORDER BY t.updated_at DESC
+      `;
+    }
+    
+    const result = await client.query(query, params);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
+
+export async function getOutboxThreadById(threadId: string) {
+  const client = await pool.connect();
+  try {
+    const threadResult = await client.query(
+      `SELECT id, user_id, recipient_name, recipient_email, recipient_role, recipient_company, recipient_location, subject, status, created_at, updated_at 
+      FROM outbox_threads 
+      WHERE id = $1`,
+      [threadId]
+    );
+    
+    if (threadResult.rows.length === 0) {
+      return null;
+    }
+    
+    const emailsResult = await client.query(
+      `SELECT id, thread_id, sender_type, body, body_html, attachments, created_at 
+      FROM outbox_emails 
+      WHERE thread_id = $1
+      ORDER BY created_at ASC`,
+      [threadId]
+    );
+    
+    return {
+      ...threadResult.rows[0],
+      emails: emailsResult.rows
+    };
+  } finally {
+    client.release();
+  }
+}
+
+export async function createOutboxThread(thread: {
+  user_id: string;
+  recipient_name: string;
+  recipient_email: string;
+  recipient_role: string;
+  recipient_company: string;
+  recipient_location: string;
+  subject: string;
+  status?: string;
+  first_email: {
+    sender_type: string;
+    body: string;
+    body_html?: string;
+    attachments?: any;
+  };
+}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const threadResult = await client.query(
+      `INSERT INTO outbox_threads (user_id, recipient_name, recipient_email, recipient_role, recipient_company, recipient_location, subject, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, user_id, recipient_name, recipient_email, recipient_role, recipient_company, recipient_location, subject, status, created_at, updated_at`,
+      [
+        thread.user_id,
+        thread.recipient_name,
+        thread.recipient_email,
+        thread.recipient_role,
+        thread.recipient_company,
+        thread.recipient_location,
+        thread.subject,
+        thread.status || 'draft'
+      ]
+    );
+    
+    const newThread = threadResult.rows[0];
+    
+    await client.query(
+      `INSERT INTO outbox_emails (thread_id, sender_type, body, body_html, attachments)
+      VALUES ($1, $2, $3, $4, $5)`,
+      [
+        newThread.id,
+        thread.first_email.sender_type,
+        thread.first_email.body,
+        thread.first_email.body_html || null,
+        JSON.stringify(thread.first_email.attachments || [])
+      ]
+    );
+    
+    await client.query('COMMIT');
+    return newThread;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function addOutboxEmail(email: {
+  thread_id: string;
+  sender_type: string;
+  body: string;
+  body_html?: string;
+  attachments?: any;
+}) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    const result = await client.query(
+      `INSERT INTO outbox_emails (thread_id, sender_type, body, body_html, attachments)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, thread_id, sender_type, body, body_html, attachments, created_at`,
+      [
+        email.thread_id,
+        email.sender_type,
+        email.body,
+        email.body_html || null,
+        JSON.stringify(email.attachments || [])
+      ]
+    );
+    
+    await client.query(
+      `UPDATE outbox_threads 
+      SET updated_at = NOW()
+      WHERE id = $1`,
+      [email.thread_id]
+    );
+    
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteOutboxThread(threadId: string) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    await client.query(
+      `DELETE FROM outbox_emails WHERE thread_id = $1`,
+      [threadId]
+    );
+    
+    const result = await client.query(
+      `DELETE FROM outbox_threads WHERE id = $1 RETURNING id`,
+      [threadId]
+    );
+    
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function searchOutboxThreads(query: string, userId?: string) {
+  const client = await pool.connect();
+  try {
+    const searchPattern = `%${query}%`;
+    
+    if (userId) {
+      const result = await client.query(
+        `SELECT 
+          t.*,
+          (SELECT body FROM outbox_emails WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) as latest_email_preview
+        FROM outbox_threads t
+        WHERE t.user_id = $1 AND (
+          t.recipient_name ILIKE $2 OR 
+          t.recipient_email ILIKE $2 OR 
+          t.recipient_role ILIKE $2 OR 
+          t.recipient_company ILIKE $2 OR 
+          t.recipient_location ILIKE $2 OR 
+          t.subject ILIKE $2 OR
+          EXISTS (SELECT 1 FROM outbox_emails e WHERE e.thread_id = t.id AND e.body ILIKE $2)
+        )
+        ORDER BY t.updated_at DESC`,
+        [userId, searchPattern]
+      );
+      return result.rows;
+    } else {
+      const result = await client.query(
+        `SELECT 
+          t.*,
+          (SELECT body FROM outbox_emails WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) as latest_email_preview
+        FROM outbox_threads t
+        WHERE 
+          t.recipient_name ILIKE $1 OR 
+          t.recipient_email ILIKE $1 OR 
+          t.recipient_role ILIKE $1 OR 
+          t.recipient_company ILIKE $1 OR 
+          t.recipient_location ILIKE $1 OR 
+          t.subject ILIKE $1 OR
+          EXISTS (SELECT 1 FROM outbox_emails e WHERE e.thread_id = t.id AND e.body ILIKE $1)
+        ORDER BY t.updated_at DESC`,
+        [searchPattern]
+      );
+      return result.rows;
+    }
+  } finally {
+    client.release();
+  }
+}
+
+// Resume-related functions
+export interface Resume {
+  id: string;
+  user_id: string;
+  filename: string;
+  file_size: number;
+  file_type: string;
+  file_data: Buffer;
+  file_url: string | null;
+  is_starred: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function getResumes(userId?: string) {
+  const client = await pool.connect();
+  try {
+    if (userId) {
+      const result = await client.query(
+        `SELECT id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at 
+        FROM resumes 
+        WHERE user_id = $1 
+        ORDER BY is_starred DESC, updated_at DESC`,
+        [userId]
+      );
+      return result.rows;
+    } else {
+      const result = await client.query(
+        `SELECT id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at 
+        FROM resumes 
+        ORDER BY updated_at DESC`
+      );
+      return result.rows;
+    }
+  } finally {
+    client.release();
+  }
+}
+
+export async function getResumeById(resumeId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at 
+      FROM resumes 
+      WHERE id = $1`,
+      [resumeId]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function getStarredResume(userId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at 
+      FROM resumes 
+      WHERE user_id = $1 AND is_starred = true 
+      LIMIT 1`,
+      [userId]
+    );
+    return result.rows[0] || null;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createResume(resume: {
+  user_id: string;
+  filename: string;
+  file_size: number;
+  file_type: string;
+  file_data?: Buffer;
+  file_url?: string;
+  is_starred?: boolean;
+}) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO resumes (user_id, filename, file_size, file_type, file_data, file_url, is_starred)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at`,
+      [
+        resume.user_id,
+        resume.filename,
+        resume.file_size,
+        resume.file_type,
+        resume.file_data || null,
+        resume.file_url || null,
+        resume.is_starred || false
+      ]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+// S3-compatible version - stores only URL, no file_data
+export async function createResumeS3(resume: {
+  user_id: string;
+  filename: string;
+  file_size: number;
+  file_type: string;
+  file_url: string;
+  is_starred?: boolean;
+}) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO resumes (user_id, filename, file_size, file_type, file_data, file_url, is_starred)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at`,
+      [
+        resume.user_id,
+        resume.filename,
+        resume.file_size,
+        resume.file_type,
+        null, // No file_data for S3 resumes
+        resume.file_url,
+        resume.is_starred || false
+      ]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateResume(resumeId: string, updates: {
+  filename?: string;
+  file_size?: number;
+  file_type?: string;
+  file_data?: Buffer;
+  file_url?: string;
+  is_starred?: boolean;
+}) {
+  const client = await pool.connect();
+  try {
+    const setClause: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (updates.filename !== undefined) {
+      setClause.push(`filename = $${paramIndex}`);
+      values.push(updates.filename);
+      paramIndex++;
+    }
+    if (updates.file_size !== undefined) {
+      setClause.push(`file_size = $${paramIndex}`);
+      values.push(updates.file_size);
+      paramIndex++;
+    }
+    if (updates.file_type !== undefined) {
+      setClause.push(`file_type = $${paramIndex}`);
+      values.push(updates.file_type);
+      paramIndex++;
+    }
+    if (updates.file_data !== undefined) {
+      setClause.push(`file_data = $${paramIndex}`);
+      values.push(updates.file_data);
+      paramIndex++;
+    }
+    if (updates.file_url !== undefined) {
+      setClause.push(`file_url = $${paramIndex}`);
+      values.push(updates.file_url);
+      paramIndex++;
+    }
+    if (updates.is_starred !== undefined) {
+      setClause.push(`is_starred = $${paramIndex}`);
+      values.push(updates.is_starred);
+      paramIndex++;
+    }
+
+    if (setClause.length === 0) {
+      return null;
+    }
+
+    values.push(resumeId);
+    const result = await client.query(
+      `UPDATE resumes 
+      SET ${setClause.join(', ')}, updated_at = NOW()
+      WHERE id = $${paramIndex}
+      RETURNING id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at`,
+      values
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteResume(resumeId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `DELETE FROM resumes 
+      WHERE id = $1
+      RETURNING id`,
+      [resumeId]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function starResume(resumeId: string, userId: string) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // First, unstar all other resumes for this user
+    await client.query(
+      `UPDATE resumes 
+      SET is_starred = false, updated_at = NOW()
+      WHERE user_id = $1 AND id != $2`,
+      [userId, resumeId]
+    );
+    
+    // Then, star the specified resume
+    const result = await client.query(
+      `UPDATE resumes 
+      SET is_starred = true, updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at`,
+      [resumeId]
+    );
+    
+    await client.query('COMMIT');
+    return result.rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function unstarResume(resumeId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `UPDATE resumes 
+      SET is_starred = false, updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, user_id, filename, file_size, file_type, file_url, is_starred, created_at, updated_at`,
+      [resumeId]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+// Email-related functions
+export interface Email {
+  id: string;
+  user_id: string;
+  recipient_email: string;
+  recipient_name: string | null;
+  subject: string;
+  content: string;
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function getEmails(userId?: string) {
+  const client = await pool.connect();
+  try {
+    if (userId) {
+      const result = await client.query(
+        `SELECT id, user_id, recipient_email, recipient_name, subject, content, status, created_at, updated_at 
+        FROM emails 
+        WHERE user_id = $1 
+        ORDER BY created_at DESC`,
+        [userId]
+      );
+      return result.rows;
+    } else {
+      const result = await client.query(
+        `SELECT id, user_id, recipient_email, recipient_name, subject, content, status, created_at, updated_at 
+        FROM emails 
+        ORDER BY created_at DESC`
+      );
+      return result.rows;
+    }
+  } finally {
+    client.release();
+  }
+}
+
+export async function getEmailById(emailId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `SELECT id, user_id, recipient_email, recipient_name, subject, content, status, created_at, updated_at 
+      FROM emails 
+      WHERE id = $1`,
+      [emailId]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function createEmail(email: {
+  user_id: string;
+  recipient_email: string;
+  recipient_name?: string;
+  subject: string;
+  content: string;
+  status?: string;
+}) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `INSERT INTO emails (user_id, recipient_email, recipient_name, subject, content, status)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, user_id, recipient_email, recipient_name, subject, content, status, created_at, updated_at`,
+      [
+        email.user_id,
+        email.recipient_email,
+        email.recipient_name || null,
+        email.subject,
+        email.content,
+        email.status || 'draft'
+      ]
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function updateEmail(emailId: string, updates: {
+  recipient_email?: string;
+  recipient_name?: string;
+  subject?: string;
+  content?: string;
+  status?: string;
+}) {
+  const client = await pool.connect();
+  try {
+    const setClause: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (updates.recipient_email !== undefined) {
+      setClause.push(`recipient_email = $${paramIndex}`);
+      values.push(updates.recipient_email);
+      paramIndex++;
+    }
+    if (updates.recipient_name !== undefined) {
+      setClause.push(`recipient_name = $${paramIndex}`);
+      values.push(updates.recipient_name);
+      paramIndex++;
+    }
+    if (updates.subject !== undefined) {
+      setClause.push(`subject = $${paramIndex}`);
+      values.push(updates.subject);
+      paramIndex++;
+    }
+    if (updates.content !== undefined) {
+      setClause.push(`content = $${paramIndex}`);
+      values.push(updates.content);
+      paramIndex++;
+    }
+    if (updates.status !== undefined) {
+      setClause.push(`status = $${paramIndex}`);
+      values.push(updates.status);
+      paramIndex++;
+    }
+
+    if (setClause.length === 0) {
+      return null;
+    }
+
+    values.push(emailId);
+    const result = await client.query(
+      `UPDATE emails 
+      SET ${setClause.join(', ')}, updated_at = NOW()
+      WHERE id = $${paramIndex}
+      RETURNING id, user_id, recipient_email, recipient_name, subject, content, status, created_at, updated_at`,
+      values
+    );
+    return result.rows[0];
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteEmail(emailId: string) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      `DELETE FROM emails 
+      WHERE id = $1
+      RETURNING id`,
+      [emailId]
+    );
+    return result.rows[0];
   } finally {
     client.release();
   }

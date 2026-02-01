@@ -24,6 +24,11 @@ interface User {
   bio: string;
   avatar_url?: string;
   remaining_searches: number;
+  city?: string;
+  state?: string;
+  university?: string;
+  major?: string;
+  grad_year?: string;
 }
 
 export default function ProfilePage() {
@@ -102,6 +107,11 @@ export default function ProfilePage() {
         title: formData.title,
         phone: formData.phone,
         bio: formData.bio,
+        city: formData.city,
+        state: formData.state,
+        university: formData.university,
+        major: formData.major,
+        grad_year: formData.gradYear,
       };
       
       const res = await fetch('/api/user/update', {

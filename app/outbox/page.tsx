@@ -28,8 +28,8 @@ export default function OutboxIndexPage() {
             Your Outbox is Waiting
           </h3>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-[280px] mx-auto">
-            Select a conversation from the left to read history, or start a
-            fresh thread to grow your network.
+            Select an email from the left to read or edit it, or compose a new
+            email to get started.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default function OutboxIndexPage() {
 
           <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider px-3 py-2">
             <MousePointerClick size={14} className="animate-bounce" />
-            Or select a message
+            Or select an email
           </div>
         </div>
       </div>

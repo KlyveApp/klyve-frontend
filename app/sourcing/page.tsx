@@ -7,10 +7,11 @@ import ResultsTable, { Candidate } from "@/components/sourcing/ResultsTable";
 export default function SourcingPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchesRemaining, setSearchesRemaining] = useState(5);
+  const [searchMode, setSearchMode] = useState<"database" | "ai">("database");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [totalEntries, setTotalEntries] = useState(12416); // Mock total database entries
   const [searchFilters, setSearchFilters] = useState<{
     name?: string;
     location?: string;
@@ -20,19 +21,14 @@ export default function SourcingPage() {
   }>({});
 
   useEffect(() => {
-    loadData();
-  }, [currentPage, searchFilters]);
+    if (searchMode === "database") {
+      loadData();
+    }
+  }, [currentPage, searchFilters, searchMode]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      // Load search quota
-      const quotaRes = await fetch('/api/search-quota');
-      if (quotaRes.ok) {
-        const quota = await quotaRes.json();
-        setSearchesRemaining(quota.remaining);
-      }
       
       // Build query params
       const params = new URLSearchParams();
@@ -58,14 +54,15 @@ export default function SourcingPage() {
         company: candidate.company,
         location: candidate.location,
         linkedinUrl: candidate.linkedin_url,
-        status: candidate.status,
-        emailChainStatus: candidate.email_chain_status,
+        status: candidate.status || "none",
+        emailChainStatus: candidate.email_chain_status || "not_started",
         initials: candidate.initials
       }));
       
       setCandidates(transformedCandidates);
       setTotalResults(result.totalCount);
       setTotalPages(result.totalPages);
+      setTotalEntries(result.totalCount > totalEntries ? result.totalCount : totalEntries);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -74,8 +71,8 @@ export default function SourcingPage() {
   };
 
   const handleSearch = async (formData: FormData) => {
-    if (searchesRemaining <= 0) {
-      alert('No searches remaining. Please try again tomorrow.');
+    if (searchMode === "ai") {
+      // AI search not yet available
       return;
     }
 
@@ -95,18 +92,7 @@ export default function SourcingPage() {
         body: JSON.stringify({ filters, record: true })
       });
       
-      if (res.status === 403) {
-        const error = await res.json();
-        alert(error.error);
-        return;
-      }
-      
       if (!res.ok) throw new Error('Search failed');
-      
-      const result = await res.json();
-      
-      // Update searches remaining
-      setSearchesRemaining(result.searchesRemaining);
       
       // Update filters and reset pagination
       setSearchFilters(filters);
@@ -117,20 +103,41 @@ export default function SourcingPage() {
     }
   };
 
-  const handleNextStepSelect = async (candidateId: string, nextStep: string) => {
+  const handleStatusChange = async (candidateId: string, status: string) => {
     try {
-      const res = await fetch('/api/candidates/next-step', {
-        method: 'POST',
+      const res = await fetch(`/api/candidates/${candidateId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidateId, nextStep })
+        body: JSON.stringify({ status })
       });
       
-      if (!res.ok) throw new Error('Failed to update next step');
+      if (!res.ok) throw new Error('Failed to update status');
       
-      // Reload data to show the updated next step
-      await loadData();
+      // Update local state
+      setCandidates(prev => prev.map(c => 
+        c.id === candidateId ? { ...c, status: status as Candidate["status"] } : c
+      ));
     } catch (error) {
-      console.error('Error updating next step:', error);
+      console.error('Error updating status:', error);
+    }
+  };
+
+  const handleEmailChainChange = async (candidateId: string, emailStatus: string) => {
+    try {
+      const res = await fetch(`/api/candidates/${candidateId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email_chain_status: emailStatus })
+      });
+      
+      if (!res.ok) throw new Error('Failed to update email chain status');
+      
+      // Update local state
+      setCandidates(prev => prev.map(c => 
+        c.id === candidateId ? { ...c, emailChainStatus: emailStatus as Candidate["emailChainStatus"] } : c
+      ));
+    } catch (error) {
+      console.error('Error updating email chain status:', error);
     }
   };
 
@@ -138,26 +145,37 @@ export default function SourcingPage() {
     setCurrentPage(page);
   };
 
+  const handleSearchModeChange = (mode: "database" | "ai") => {
+    setSearchMode(mode);
+    if (mode === "ai") {
+      setCandidates([]);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-muted/20 h-full p-6">
       <div className="max-w-[1400px] mx-auto space-y-6">
         <SearchForm 
-          onSearch={handleSearch} 
-          searchesRemaining={searchesRemaining}
+          onSearch={handleSearch}
+          searchMode={searchMode}
+          onSearchModeChange={handleSearchModeChange}
+          totalEntries={totalEntries}
         />
         
-        {loading ? (
+        {loading && searchMode === "database" ? (
           <div className="bg-card rounded-lg border border-border shadow-sm p-8 text-center">
             <div className="text-muted-foreground">Loading candidates...</div>
           </div>
         ) : (
           <ResultsTable
             candidates={candidates}
-            onNextStepSelect={handleNextStepSelect}
+            onStatusChange={handleStatusChange}
+            onEmailChainChange={handleEmailChainChange}
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             totalResults={totalResults}
+            isAiMode={searchMode === "ai"}
           />
         )}
       </div>

@@ -12,7 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} antialiased bg-stone-50`}>
         <div className="flex h-screen overflow-hidden">
           {/* Persistent Sidebar */}
           <Sidebar />
@@ -22,7 +22,9 @@ export default function RootLayout({
             <Header />
 
             {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto">{children}</main>
+            <main className="flex-1 overflow-y-auto bg-stone-50">
+              {children}
+            </main>
           </div>
         </div>
       </body>

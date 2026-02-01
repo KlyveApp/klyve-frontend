@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Building2,
   MapPin,
@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import NextStepsDropdown from "./NextStepsDropdown";
 
 export interface Candidate {
   id: string;
@@ -17,34 +16,41 @@ export interface Candidate {
   company: string;
   location: string;
   linkedinUrl?: string;
-  status: "qualified" | "contacted" | "responded" | "not_interested";
-  emailChainStatus: "not_started" | "initial_sent" | "conversation_active" | "completed";
+  status: "none" | "qualified" | "contacted" | "responded";
+  emailChainStatus: "not_started" | "started";
   initials: string;
 }
 
 interface ResultsTableProps {
   candidates: Candidate[];
-  onNextStepSelect: (candidateId: string, nextStep: string) => void;
+  onStatusChange: (candidateId: string, status: string) => void;
+  onEmailChainChange: (candidateId: string, status: string) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
   totalResults: number;
+  isAiMode: boolean;
 }
 
 export default function ResultsTable({
   candidates,
-  onNextStepSelect,
+  onStatusChange,
+  onEmailChainChange,
   currentPage,
   totalPages,
   onPageChange,
   totalResults,
+  isAiMode,
 }: ResultsTableProps) {
+  const [editingStatus, setEditingStatus] = useState<string | null>(null);
+  const [editingEmail, setEditingEmail] = useState<string | null>(null);
+
   const getStatusBadge = (status: Candidate["status"]) => {
     const statusConfig = {
+      none: { bg: "bg-gray-500/10", text: "text-gray-600", label: "None" },
       qualified: { bg: "bg-emerald-500/10", text: "text-emerald-600", label: "Qualified" },
       contacted: { bg: "bg-blue-500/10", text: "text-blue-600", label: "Contacted" },
       responded: { bg: "bg-purple-500/10", text: "text-purple-600", label: "Responded" },
-      not_interested: { bg: "bg-gray-500/10", text: "text-gray-600", label: "Not Interested" },
     };
 
     const config = statusConfig[status];
@@ -55,18 +61,24 @@ export default function ResultsTable({
     );
   };
 
-  const getEmailChainStatus = (status: Candidate["emailChainStatus"]) => {
-    const statusMap = {
-      not_started: "Not started",
-      initial_sent: "Initial sent",
-      conversation_active: "Conversation active",
-      completed: "Completed",
-    };
-    return statusMap[status];
-  };
-
   const startIndex = (currentPage - 1) * 5 + 1;
   const endIndex = Math.min(startIndex + candidates.length - 1, totalResults);
+
+  // AI Mode Placeholder
+  if (isAiMode) {
+    return (
+      <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden min-h-[400px] flex items-center justify-center">
+        <div className="text-center p-8">
+          <div className="text-lg font-medium text-muted-foreground mb-2">
+            AI Search Feature
+          </div>
+          <div className="text-sm text-muted-foreground/60">
+            Rolling out currently
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
@@ -162,23 +174,58 @@ export default function ResultsTable({
                   )}
                 </td>
 
-                {/* Status (with Next Steps dropdown) */}
-                <td className="px-6 py-4 space-y-2">
-                  <div>
-                    {getStatusBadge(candidate.status)}
-                  </div>
-                  <div>
-                    <NextStepsDropdown
-                      onSelect={(nextStep) => onNextStepSelect(candidate.id, nextStep)}
-                    />
-                  </div>
+                {/* Status Dropdown */}
+                <td className="px-6 py-4">
+                  {editingStatus === candidate.id ? (
+                    <select
+                      value={candidate.status}
+                      onChange={(e) => {
+                        onStatusChange(candidate.id, e.target.value);
+                        setEditingStatus(null);
+                      }}
+                      onBlur={() => setEditingStatus(null)}
+                      autoFocus
+                      className="text-sm bg-background border border-input rounded px-2 py-1"
+                    >
+                      <option value="none">None</option>
+                      <option value="qualified">Qualified</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="responded">Responded</option>
+                    </select>
+                  ) : (
+                    <div 
+                      onClick={() => setEditingStatus(candidate.id)}
+                      className="cursor-pointer"
+                    >
+                      {getStatusBadge(candidate.status)}
+                    </div>
+                  )}
                 </td>
 
-                {/* Email Chain */}
+                {/* Email Chain Dropdown */}
                 <td className="px-6 py-4">
-                  <span className="text-xs text-muted-foreground">
-                    {getEmailChainStatus(candidate.emailChainStatus)}
-                  </span>
+                  {editingEmail === candidate.id ? (
+                    <select
+                      value={candidate.emailChainStatus}
+                      onChange={(e) => {
+                        onEmailChainChange(candidate.id, e.target.value);
+                        setEditingEmail(null);
+                      }}
+                      onBlur={() => setEditingEmail(null)}
+                      autoFocus
+                      className="text-sm bg-background border border-input rounded px-2 py-1"
+                    >
+                      <option value="not_started">Not started</option>
+                      <option value="started">Started</option>
+                    </select>
+                  ) : (
+                    <span 
+                      onClick={() => setEditingEmail(candidate.id)}
+                      className="text-xs text-muted-foreground cursor-pointer hover:text-foreground"
+                    >
+                      {candidate.emailChainStatus === "not_started" ? "Not started" : "Started"}
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
